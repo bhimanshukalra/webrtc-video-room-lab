@@ -1,11 +1,15 @@
 import { Route, Routes } from 'react-router-dom';
-import { HomePage } from './pages';
+import { HomePage, RoomPage } from './pages';
+import { SocketProvider } from './providers';
 
 function App() {
   return (
-    <Routes>
-      <Route path='/' element={<HomePage />} />
-    </Routes>
+    <SocketProvider>
+      <Routes>
+        <Route path='/' element={<HomePage />} />
+        <Route path='/room/:roomId' element={<RoomPage />} />
+      </Routes>
+    </SocketProvider>
   );
 }
 
