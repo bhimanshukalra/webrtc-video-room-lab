@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react';
 
 interface VideoPlayerProps {
   mediaStream: MediaStream | null;
+  muted?: boolean;
 }
 
-export const VideoPlayer = ({ mediaStream }: VideoPlayerProps) => {
+export const VideoPlayer = ({ mediaStream, muted = false }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -15,5 +16,5 @@ export const VideoPlayer = ({ mediaStream }: VideoPlayerProps) => {
     videoRef.current.srcObject = mediaStream;
   }, [mediaStream]);
 
-  return <video ref={videoRef} autoPlay playsInline muted />;
+  return <video ref={videoRef} autoPlay playsInline muted={muted} />;
 };
