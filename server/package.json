@@ -27,6 +27,8 @@
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.6",
-    "@types/express": "^5.0.6"
+    "@types/express": "^5.0.6",
+    "tsx": "^4.22.0",
+    "typescript": "^6.0.3"
   }
 }
