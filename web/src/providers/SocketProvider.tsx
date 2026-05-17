@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 interface SocketProviderProps {
-  children: ReactNode | ReactNode[];
+  children: ReactNode;
 }
 
 interface SocketContextValue {

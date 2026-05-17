@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { useSocket } from '../providers';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,9 +23,12 @@ export const HomePage = () => {
     socket.emit('join-room', { emailId, roomId });
   };
 
-  const handleRoomJoined = ({ roomId }: { roomId: string }) => {
-    navigate(`/room/${roomId}`);
-  };
+  const handleRoomJoined = useCallback(
+    ({ roomId }: { roomId: string }) => {
+      navigate(`/room/${roomId}`);
+    },
+    [navigate],
+  );
 
   useEffect(() => {
     socket.on('joined-room', handleRoomJoined);
