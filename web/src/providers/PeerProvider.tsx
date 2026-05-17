@@ -19,6 +19,7 @@ interface PeerContextPayload {
     offer: RTCSessionDescriptionInit,
   ) => Promise<RTCSessionDescriptionInit>;
   setRemoteAnswer: (answer: RTCSessionDescriptionInit) => Promise<void>;
+  addIceCandidate: (candidate: RTCIceCandidateInit) => Promise<void>;
   sendStream: (stream: MediaStream | null) => void;
   remoteUserStream: MediaStream | null;
 }
@@ -61,18 +62,22 @@ export const PeerProvider = ({ children }: PeerProviderProps) => {
   const createOffer = async () => {
     const offer = await peer.createOffer();
     await peer.setLocalDescription(offer);
-    return offer;
+    return peer.localDescription!;
   };
 
   const createAnswer = async (offer: RTCSessionDescriptionInit) => {
     await peer.setRemoteDescription(offer);
     const answer = await peer.createAnswer();
     await peer.setLocalDescription(answer);
-    return answer;
+    return peer.localDescription!;
   };
 
   const setRemoteAnswer = async (answer: RTCSessionDescriptionInit) => {
     await peer.setRemoteDescription(answer);
+  };
+
+  const addIceCandidate = async (candidate: RTCIceCandidateInit) => {
+    await peer.addIceCandidate(candidate);
   };
 
   const sendStream = (stream: MediaStream | null) => {
@@ -80,8 +85,15 @@ export const PeerProvider = ({ children }: PeerProviderProps) => {
       return;
     }
 
-    const tracks = stream.getTracks();
-    for (const track of tracks) {
+    for (const track of stream.getTracks()) {
+      const senderAlreadyExists = peer
+        .getSenders()
+        .some((sender) => sender.track === track);
+
+      if (senderAlreadyExists) {
+        continue;
+      }
+
       peer.addTrack(track, stream);
     }
   };
@@ -106,6 +118,7 @@ export const PeerProvider = ({ children }: PeerProviderProps) => {
         createOffer,
         createAnswer,
         setRemoteAnswer,
+        addIceCandidate,
         sendStream,
         remoteUserStream,
       }}

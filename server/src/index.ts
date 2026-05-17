@@ -33,6 +33,11 @@ interface CallAcceptedPayload {
   answer: RTCSessionDescriptionInit;
 }
 
+interface IceCandidatePayload {
+  emailId: string;
+  candidate: RTCIceCandidateInit;
+}
+
 socketIo.on("connection", (socket) => {
   console.log("New connection");
   socket.on("join-room", ({ emailId, roomId }: JoinRoomPayload) => {
@@ -47,12 +52,29 @@ socketIo.on("connection", (socket) => {
   socket.on("call-user", ({ emailId, offer }: CallUserPayload) => {
     const fromEmail = socketToEmailMapping.get(socket.id);
     const socketId = emailToSocketMapping.get(emailId);
+    if (!fromEmail || !socketId) {
+      return;
+    }
+
     socket.to(socketId).emit("incoming-call", { fromEmail, offer });
   });
 
   socket.on("call-accepted", ({ emailId, answer }: CallAcceptedPayload) => {
     const socketId = emailToSocketMapping.get(emailId);
+    if (!socketId) {
+      return;
+    }
+
     socket.to(socketId).emit("call-accepted", { answer });
+  });
+
+  socket.on("ice-candidate", ({ emailId, candidate }: IceCandidatePayload) => {
+    const socketId = emailToSocketMapping.get(emailId);
+    if (!socketId) {
+      return;
+    }
+
+    socket.to(socketId).emit("ice-candidate", { candidate });
   });
 });
 
