@@ -16,6 +16,11 @@ const CONTROL_BUTTON_BASE_CLASSNAME =
 const CONTROL_BUTTON_ON_CLASSNAME = 'bg-white text-zinc-950 hover:bg-zinc-200';
 const CONTROL_BUTTON_OFF_CLASSNAME = 'bg-red-600 text-white hover:bg-red-500';
 
+const getControlButtonClassName = (isEnabled: boolean) =>
+  `${CONTROL_BUTTON_BASE_CLASSNAME} ${
+    isEnabled ? CONTROL_BUTTON_ON_CLASSNAME : CONTROL_BUTTON_OFF_CLASSNAME
+  }`;
+
 export const RoomPage = () => {
   const { socket, signalingState } = useSocket();
   const {
@@ -151,12 +156,6 @@ export const RoomPage = () => {
     setIsMicOn(audioTrack.enabled);
   };
 
-  const cameraButtonClassName = `${CONTROL_BUTTON_BASE_CLASSNAME} ${
-    isCameraOn ? CONTROL_BUTTON_ON_CLASSNAME : CONTROL_BUTTON_OFF_CLASSNAME
-  }`;
-  const micButtonClassName = `${CONTROL_BUTTON_BASE_CLASSNAME} ${
-    isMicOn ? CONTROL_BUTTON_ON_CLASSNAME : CONTROL_BUTTON_OFF_CLASSNAME
-  }`;
   const signalingStatusClassName = `rounded-full px-3 py-1 text-xs font-medium ${
     signalingState === 'connected'
       ? 'bg-emerald-500 text-zinc-950'
@@ -177,14 +176,14 @@ export const RoomPage = () => {
           <button
             type="button"
             onClick={toggleCamera}
-            className={cameraButtonClassName}
+            className={getControlButtonClassName(isCameraOn)}
           >
             {isCameraOn ? 'Turn camera off' : 'Turn camera on'}
           </button>
           <button
             type="button"
             onClick={toggleMic}
-            className={micButtonClassName}
+            className={getControlButtonClassName(isMicOn)}
           >
             {isMicOn ? 'Mute mic' : 'Unmute mic'}
           </button>
