@@ -39,6 +39,12 @@ interface IceCandidatePayload {
   candidate: RTCIceCandidateInit;
 }
 
+interface MediaTogglePayload {
+  emailId: string;
+  kind: "audio" | "video";
+  enabled: boolean;
+}
+
 const removeUserFromRoom = (socketId: string) => {
   const emailId = socketToEmailMapping.get(socketId);
   const roomId = socketToRoomMapping.get(socketId);
@@ -94,6 +100,18 @@ socketIo.on("connection", (socket) => {
 
     socket.to(socketId).emit("ice-candidate", { candidate });
   });
+
+  socket.on(
+    "media-toggle",
+    ({ emailId, kind, enabled }: MediaTogglePayload) => {
+      const socketId = emailToSocketMapping.get(emailId);
+      if (!socketId) {
+        return;
+      }
+
+      socket.to(socketId).emit("media-toggle", { kind, enabled });
+    },
+  );
 
   socket.on("leave-room", () => {
     const roomId = socketToRoomMapping.get(socket.id);

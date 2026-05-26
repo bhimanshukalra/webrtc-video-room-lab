@@ -16,14 +16,23 @@ interface UserLeftPayload {
   emailId: string;
 }
 
+interface MediaTogglePayload {
+  kind: 'audio' | 'video';
+  enabled: boolean;
+}
+
 interface RoomLocationState {
   emailId?: string;
 }
 
 const CONTROL_BUTTON_BASE_CLASSNAME =
-  'rounded-md px-4 py-2 text-sm font-medium transition';
-const CONTROL_BUTTON_ON_CLASSNAME = 'bg-white text-zinc-950 hover:bg-zinc-200';
-const CONTROL_BUTTON_OFF_CLASSNAME = 'bg-red-600 text-white hover:bg-red-500';
+  'min-w-32 rounded-full px-5 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-950';
+const CONTROL_BUTTON_ON_CLASSNAME =
+  'bg-white text-zinc-950 hover:bg-zinc-200 focus:ring-white';
+const CONTROL_BUTTON_OFF_CLASSNAME =
+  'bg-red-600 text-white hover:bg-red-500 focus:ring-red-400';
+const END_CALL_BUTTON_CLASSNAME =
+  'min-w-32 rounded-full bg-red-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-zinc-950';
 
 const getControlButtonClassName = (isEnabled: boolean) =>
   `${CONTROL_BUTTON_BASE_CLASSNAME} ${
@@ -65,6 +74,26 @@ const getSignalingStatusClassName = (
 const getUserDisplayName = (emailId: string) =>
   emailId.split('@')[0] || emailId;
 
+const getRemoteMediaStatus = ({
+  isCameraOn,
+  isMicOn,
+}: {
+  isCameraOn: boolean;
+  isMicOn: boolean;
+}) => {
+  const statuses = [];
+
+  if (!isCameraOn) {
+    statuses.push('Camera off');
+  }
+
+  if (!isMicOn) {
+    statuses.push('Mic muted');
+  }
+
+  return statuses.join(' · ');
+};
+
 export const RoomPage = () => {
   const { roomId } = useParams();
   const location = useLocation();
@@ -87,6 +116,10 @@ export const RoomPage = () => {
     useState<MediaStream | null>(null);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
+  const [remoteMediaState, setRemoteMediaState] = useState({
+    isCameraOn: true,
+    isMicOn: true,
+  });
   const [toastMessage, setToastMessage] = useState('');
   const currentUserStreamRef = useRef<MediaStream | null>(null);
   const remoteEmailIdRef = useRef('');
@@ -113,6 +146,7 @@ export const RoomPage = () => {
       const stream = await ensureUserMediaStream();
       sendStream(stream);
       remoteEmailIdRef.current = emailId;
+      setRemoteMediaState({ isCameraOn: true, isMicOn: true });
       const offer = await createOffer();
       socket.emit('call-user', { emailId, offer });
     },
@@ -125,6 +159,7 @@ export const RoomPage = () => {
       const stream = await ensureUserMediaStream();
       sendStream(stream);
       remoteEmailIdRef.current = fromEmail;
+      setRemoteMediaState({ isCameraOn: true, isMicOn: true });
       const answer = await createAnswer(offer);
       socket.emit('call-accepted', { emailId: fromEmail, answer });
     },
@@ -155,12 +190,20 @@ export const RoomPage = () => {
     [clearRemoteUserStream],
   );
 
+  const handleMediaToggle = useCallback(({ kind, enabled }: MediaTogglePayload) => {
+    setRemoteMediaState((currentState) => ({
+      ...currentState,
+      ...(kind === 'video' ? { isCameraOn: enabled } : { isMicOn: enabled }),
+    }));
+  }, []);
+
   useEffect(() => {
     socket.on('user-joined', handleNewUserJoined);
     socket.on('incoming-call', handleIncomingCall);
     socket.on('call-accepted', handleCallAccepted);
     socket.on('ice-candidate', handleIceCandidate);
     socket.on('user-left', handleUserLeft);
+    socket.on('media-toggle', handleMediaToggle);
 
     return () => {
       socket.off('user-joined', handleNewUserJoined);
@@ -168,6 +211,7 @@ export const RoomPage = () => {
       socket.off('call-accepted', handleCallAccepted);
       socket.off('ice-candidate', handleIceCandidate);
       socket.off('user-left', handleUserLeft);
+      socket.off('media-toggle', handleMediaToggle);
     };
   }, [
     socket,
@@ -176,6 +220,7 @@ export const RoomPage = () => {
     handleIncomingCall,
     handleIceCandidate,
     handleUserLeft,
+    handleMediaToggle,
   ]);
 
   useEffect(() => {
@@ -226,6 +271,13 @@ export const RoomPage = () => {
 
     videoTrack.enabled = !videoTrack.enabled;
     setIsCameraOn(videoTrack.enabled);
+    if (remoteEmailIdRef.current) {
+      socket.emit('media-toggle', {
+        emailId: remoteEmailIdRef.current,
+        kind: 'video',
+        enabled: videoTrack.enabled,
+      });
+    }
   };
 
   const toggleMic = () => {
@@ -236,6 +288,13 @@ export const RoomPage = () => {
 
     audioTrack.enabled = !audioTrack.enabled;
     setIsMicOn(audioTrack.enabled);
+    if (remoteEmailIdRef.current) {
+      socket.emit('media-toggle', {
+        emailId: remoteEmailIdRef.current,
+        kind: 'audio',
+        enabled: audioTrack.enabled,
+      });
+    }
   };
 
   const handleEndCall = () => {
@@ -257,6 +316,7 @@ export const RoomPage = () => {
 
     currentUserStreamRef.current = null;
     remoteEmailIdRef.current = '';
+    setRemoteMediaState({ isCameraOn: true, isMicOn: true });
     setCurrentUserStream(null);
     setIsCameraOn(true);
     setIsMicOn(true);
@@ -324,6 +384,7 @@ export const RoomPage = () => {
           <VideoPlayer
             mediaStream={remoteUserStream}
             label={getUserDisplayName(remoteEmailIdRef.current)}
+            status={getRemoteMediaStatus(remoteMediaState)}
           />
         )}
         {!remoteUserStream && (
@@ -333,7 +394,7 @@ export const RoomPage = () => {
         )}
       </div>
       {currentUserStream && (
-        <div className='flex gap-3'>
+        <div className='flex flex-wrap justify-center gap-3'>
           <button
             type='button'
             onClick={toggleCamera}
@@ -351,7 +412,7 @@ export const RoomPage = () => {
           <button
             type='button'
             onClick={handleEndCall}
-            className='rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600'
+            className={END_CALL_BUTTON_CLASSNAME}
           >
             End call
           </button>
