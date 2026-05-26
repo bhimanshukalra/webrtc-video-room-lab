@@ -17,7 +17,7 @@ const CONTROL_BUTTON_ON_CLASSNAME = 'bg-white text-zinc-950 hover:bg-zinc-200';
 const CONTROL_BUTTON_OFF_CLASSNAME = 'bg-red-600 text-white hover:bg-red-500';
 
 export const RoomPage = () => {
-  const { socket } = useSocket();
+  const { socket, signalingState } = useSocket();
   const {
     peer,
     createOffer,
@@ -157,10 +157,20 @@ export const RoomPage = () => {
   const micButtonClassName = `${CONTROL_BUTTON_BASE_CLASSNAME} ${
     isMicOn ? CONTROL_BUTTON_ON_CLASSNAME : CONTROL_BUTTON_OFF_CLASSNAME
   }`;
+  const signalingStatusClassName = `rounded-full px-3 py-1 text-xs font-medium ${
+    signalingState === 'connected'
+      ? 'bg-emerald-500 text-zinc-950'
+      : 'bg-red-600 text-white'
+  }`;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-zinc-950 p-6 text-white">
-      <h1 className="text-2xl font-semibold">Room page</h1>
+      <div className="flex flex-col items-center gap-2">
+        <h1 className="text-2xl font-semibold">Room page</h1>
+        <span className={signalingStatusClassName}>
+          Signaling {signalingState}
+        </span>
+      </div>
       {currentUserStream && <VideoPlayer mediaStream={currentUserStream} muted />}
       {currentUserStream && (
         <div className="flex gap-3">

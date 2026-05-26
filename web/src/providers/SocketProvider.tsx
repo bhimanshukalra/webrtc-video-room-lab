@@ -1,5 +1,12 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
-import { io, Socket } from 'socket.io-client';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+import { io, type Socket } from 'socket.io-client';
 
 interface SocketProviderProps {
   children: ReactNode;
@@ -7,6 +14,7 @@ interface SocketProviderProps {
 
 interface SocketContextValue {
   socket: Socket;
+  signalingState: 'connected' | 'disconnected';
 }
 
 const SocketContext = createContext<SocketContextValue | null>(null);
@@ -23,10 +31,30 @@ export const useSocket = () => {
 
 export const SocketProvider = ({ children }: SocketProviderProps) => {
   const socket = useMemo(() => io('http://localhost:8001'), []);
+  const [signalingState, setSignalingState] = useState<
+    SocketContextValue['signalingState']
+  >(socket.connected ? 'connected' : 'disconnected');
+
+  useEffect(() => {
+    const handleConnect = () => {
+      setSignalingState('connected');
+    };
+
+    const handleDisconnect = () => {
+      setSignalingState('disconnected');
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+
+    return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+    };
+  }, [socket]);
 
   return (
-    // TODO: check if it's better to pass socket directly, instead of passing inside an object
-    <SocketContext.Provider value={{ socket }}>
+    <SocketContext.Provider value={{ socket, signalingState }}>
       {children}
     </SocketContext.Provider>
   );
