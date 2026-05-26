@@ -16,5 +16,13 @@ export const VideoPlayer = ({ mediaStream, muted = false }: VideoPlayerProps) =>
     videoRef.current.srcObject = mediaStream;
   }, [mediaStream]);
 
-  return <video ref={videoRef} autoPlay playsInline muted={muted} />;
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      muted={muted}
+      className='aspect-video w-full max-w-md rounded-md bg-black object-cover'
+    />
+  );
 };
