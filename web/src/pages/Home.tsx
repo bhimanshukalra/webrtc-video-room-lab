@@ -3,6 +3,7 @@ import { useSocket } from '../providers';
 import { useNavigate } from 'react-router-dom';
 
 const INPUT_CLASSNAME = 'text-2xl p-3 m-3 border';
+const SESSION_STORAGE_EMAIL_ID_KEY = 'webrtc-video-room-email-id';
 
 export const HomePage = () => {
   const { socket } = useSocket();
@@ -20,12 +21,28 @@ export const HomePage = () => {
   };
 
   const handleJoinRoom = () => {
-    socket.emit('join-room', { emailId, roomId });
+    const normalizedEmailId = emailId.trim();
+    const normalizedRoomId = roomId.trim();
+
+    if (!normalizedEmailId || !normalizedRoomId) {
+      return;
+    }
+
+    window.sessionStorage.setItem(
+      SESSION_STORAGE_EMAIL_ID_KEY,
+      normalizedEmailId,
+    );
+    socket.emit('join-room', {
+      emailId: normalizedEmailId,
+      roomId: normalizedRoomId,
+    });
   };
 
   const handleRoomJoined = useCallback(
     ({ roomId }: { roomId: string }) => {
-      navigate(`/room/${roomId}`, { state: { emailId } });
+      navigate(`/room/${roomId}`, {
+        state: { emailId: emailId.trim(), hasJoinedRoom: true },
+      });
     },
     [emailId, navigate],
   );
@@ -36,7 +53,7 @@ export const HomePage = () => {
     return () => {
       socket.off('joined-room', handleRoomJoined);
     };
-  }, [socket]);
+  }, [handleRoomJoined, socket]);
 
   return (
     <div className='flex items-center justify-center h-screen flex-col'>

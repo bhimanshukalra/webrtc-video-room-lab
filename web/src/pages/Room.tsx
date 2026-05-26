@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  type Location,
+} from 'react-router-dom';
 import { usePeer, useSocket } from '../providers';
 import { VideoPlayer } from '../components';
 
@@ -23,8 +28,10 @@ interface MediaTogglePayload {
 
 interface RoomLocationState {
   emailId?: string;
+  hasJoinedRoom?: boolean;
 }
 
+const SESSION_STORAGE_EMAIL_ID_KEY = 'webrtc-video-room-email-id';
 const CONTROL_BUTTON_BASE_CLASSNAME =
   'min-w-32 rounded-full px-5 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-950';
 const CONTROL_BUTTON_ON_CLASSNAME =
@@ -74,6 +81,12 @@ const getSignalingStatusClassName = (
 const getUserDisplayName = (emailId: string) =>
   emailId.split('@')[0] || emailId;
 
+const getInitialEmailId = (location: Location) => {
+  const { emailId } = (location.state ?? {}) as RoomLocationState;
+
+  return emailId ?? window.sessionStorage.getItem(SESSION_STORAGE_EMAIL_ID_KEY) ?? '';
+};
+
 const getRemoteMediaStatus = ({
   isCameraOn,
   isMicOn,
@@ -98,7 +111,7 @@ export const RoomPage = () => {
   const { roomId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { emailId } = (location.state ?? {}) as RoomLocationState;
+  const { hasJoinedRoom } = (location.state ?? {}) as RoomLocationState;
   const { socket, signalingState } = useSocket();
   const {
     peer,
@@ -112,6 +125,7 @@ export const RoomPage = () => {
     remoteUserStream,
     clearRemoteUserStream,
   } = usePeer();
+  const emailId = getInitialEmailId(location);
   const [currentUserStream, setCurrentUserStream] =
     useState<MediaStream | null>(null);
   const [isCameraOn, setIsCameraOn] = useState(true);
@@ -246,8 +260,18 @@ export const RoomPage = () => {
   }, [peer, socket]);
 
   useEffect(() => {
+    if (!emailId) {
+      navigate('/');
+    }
+  }, [emailId, navigate]);
+
+  useEffect(() => {
+    if (!emailId) {
+      return;
+    }
+
     ensureUserMediaStream();
-  }, [ensureUserMediaStream]);
+  }, [emailId, ensureUserMediaStream]);
 
   useEffect(() => {
     const wasReconnected =
@@ -262,6 +286,14 @@ export const RoomPage = () => {
 
     socket.emit('join-room', { emailId, roomId });
   }, [emailId, roomId, signalingState, socket]);
+
+  useEffect(() => {
+    if (!emailId || !roomId || hasJoinedRoom) {
+      return;
+    }
+
+    socket.emit('join-room', { emailId, roomId });
+  }, [emailId, hasJoinedRoom, roomId, socket]);
 
   const toggleCamera = () => {
     const videoTrack = currentUserStream?.getVideoTracks()[0];
