@@ -11,6 +11,11 @@ interface IceCandidatePayload {
   candidate: RTCIceCandidateInit;
 }
 
+const CONTROL_BUTTON_BASE_CLASSNAME =
+  'rounded-md px-4 py-2 text-sm font-medium transition';
+const CONTROL_BUTTON_ON_CLASSNAME = 'bg-white text-zinc-950 hover:bg-zinc-200';
+const CONTROL_BUTTON_OFF_CLASSNAME = 'bg-red-600 text-white hover:bg-red-500';
+
 export const RoomPage = () => {
   const { socket } = useSocket();
   const {
@@ -146,16 +151,31 @@ export const RoomPage = () => {
     setIsMicOn(audioTrack.enabled);
   };
 
+  const cameraButtonClassName = `${CONTROL_BUTTON_BASE_CLASSNAME} ${
+    isCameraOn ? CONTROL_BUTTON_ON_CLASSNAME : CONTROL_BUTTON_OFF_CLASSNAME
+  }`;
+  const micButtonClassName = `${CONTROL_BUTTON_BASE_CLASSNAME} ${
+    isMicOn ? CONTROL_BUTTON_ON_CLASSNAME : CONTROL_BUTTON_OFF_CLASSNAME
+  }`;
+
   return (
-    <div>
-      <h1>Room page</h1>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-zinc-950 p-6 text-white">
+      <h1 className="text-2xl font-semibold">Room page</h1>
       {currentUserStream && <VideoPlayer mediaStream={currentUserStream} muted />}
       {currentUserStream && (
-        <div>
-          <button type="button" onClick={toggleCamera}>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={toggleCamera}
+            className={cameraButtonClassName}
+          >
             {isCameraOn ? 'Turn camera off' : 'Turn camera on'}
           </button>
-          <button type="button" onClick={toggleMic}>
+          <button
+            type="button"
+            onClick={toggleMic}
+            className={micButtonClassName}
+          >
             {isMicOn ? 'Mute mic' : 'Unmute mic'}
           </button>
         </div>
