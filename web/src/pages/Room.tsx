@@ -314,9 +314,18 @@ export const RoomPage = () => {
       </div>
       <div className='flex w-full max-w-5xl flex-wrap justify-center gap-4'>
         {currentUserStream && (
-          <VideoPlayer mediaStream={currentUserStream} muted />
+          <VideoPlayer
+            mediaStream={currentUserStream}
+            label={emailId ? `${getUserDisplayName(emailId)} (You)` : 'You'}
+            muted
+          />
         )}
-        {remoteUserStream && <VideoPlayer mediaStream={remoteUserStream} />}
+        {remoteUserStream && (
+          <VideoPlayer
+            mediaStream={remoteUserStream}
+            label={getUserDisplayName(remoteEmailIdRef.current)}
+          />
+        )}
       </div>
       {currentUserStream && (
         <div className='flex gap-3'>
