@@ -24,6 +24,8 @@ export const RoomPage = () => {
   } = usePeer();
   const [currentUserStream, setCurrentUserStream] =
     useState<MediaStream | null>(null);
+  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [isMicOn, setIsMicOn] = useState(true);
   const currentUserStreamRef = useRef<MediaStream | null>(null);
   const remoteEmailIdRef = useRef('');
 
@@ -124,11 +126,39 @@ export const RoomPage = () => {
     ensureUserMediaStream();
   }, [ensureUserMediaStream]);
 
+  const toggleCamera = () => {
+    const videoTrack = currentUserStream?.getVideoTracks()[0];
+    if (!videoTrack) {
+      return;
+    }
+
+    videoTrack.enabled = !videoTrack.enabled;
+    setIsCameraOn(videoTrack.enabled);
+  };
+
+  const toggleMic = () => {
+    const audioTrack = currentUserStream?.getAudioTracks()[0];
+    if (!audioTrack) {
+      return;
+    }
+
+    audioTrack.enabled = !audioTrack.enabled;
+    setIsMicOn(audioTrack.enabled);
+  };
+
   return (
     <div>
       <h1>Room page</h1>
+      {currentUserStream && <VideoPlayer mediaStream={currentUserStream} muted />}
       {currentUserStream && (
-        <VideoPlayer mediaStream={currentUserStream} muted />
+        <div>
+          <button type="button" onClick={toggleCamera}>
+            {isCameraOn ? 'Turn camera off' : 'Turn camera on'}
+          </button>
+          <button type="button" onClick={toggleMic}>
+            {isMicOn ? 'Mute mic' : 'Unmute mic'}
+          </button>
+        </div>
       )}
       {remoteUserStream && <VideoPlayer mediaStream={remoteUserStream} />}
     </div>
