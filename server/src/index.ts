@@ -17,6 +17,7 @@ app.use(bodyParser.json());
 
 const emailToSocketMapping = new Map();
 const socketToEmailMapping = new Map();
+const socketToRoomMapping = new Map();
 
 interface JoinRoomPayload {
   emailId: string;
@@ -38,11 +39,28 @@ interface IceCandidatePayload {
   candidate: RTCIceCandidateInit;
 }
 
+const removeUserFromRoom = (socketId: string) => {
+  const emailId = socketToEmailMapping.get(socketId);
+  const roomId = socketToRoomMapping.get(socketId);
+
+  if (emailId && roomId) {
+    socketIo.to(roomId).except(socketId).emit("user-left", { emailId });
+  }
+
+  if (emailId) {
+    emailToSocketMapping.delete(emailId);
+  }
+
+  socketToEmailMapping.delete(socketId);
+  socketToRoomMapping.delete(socketId);
+};
+
 socketIo.on("connection", (socket) => {
   console.log("New connection");
   socket.on("join-room", ({ emailId, roomId }: JoinRoomPayload) => {
     emailToSocketMapping.set(emailId, socket.id);
     socketToEmailMapping.set(socket.id, emailId);
+    socketToRoomMapping.set(socket.id, roomId);
     socket.join(roomId);
     socket.emit("joined-room", { roomId });
     socket.broadcast.to(roomId).emit("user-joined", { emailId });
@@ -75,6 +93,19 @@ socketIo.on("connection", (socket) => {
     }
 
     socket.to(socketId).emit("ice-candidate", { candidate });
+  });
+
+  socket.on("leave-room", () => {
+    const roomId = socketToRoomMapping.get(socket.id);
+    if (roomId) {
+      socket.leave(roomId);
+    }
+
+    removeUserFromRoom(socket.id);
+  });
+
+  socket.on("disconnect", () => {
+    removeUserFromRoom(socket.id);
   });
 });
 

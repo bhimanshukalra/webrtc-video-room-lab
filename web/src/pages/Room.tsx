@@ -12,6 +12,10 @@ interface IceCandidatePayload {
   candidate: RTCIceCandidateInit;
 }
 
+interface UserLeftPayload {
+  emailId: string;
+}
+
 interface RoomLocationState {
   emailId?: string;
 }
@@ -74,6 +78,7 @@ export const RoomPage = () => {
     addIceCandidate,
     sendStream,
     remoteUserStream,
+    clearRemoteUserStream,
   } = usePeer();
   const [currentUserStream, setCurrentUserStream] =
     useState<MediaStream | null>(null);
@@ -136,17 +141,28 @@ export const RoomPage = () => {
     [addIceCandidate],
   );
 
+  const handleUserLeft = useCallback(
+    ({ emailId }: UserLeftPayload) => {
+      console.log('user left room', emailId);
+      remoteEmailIdRef.current = '';
+      clearRemoteUserStream();
+    },
+    [clearRemoteUserStream],
+  );
+
   useEffect(() => {
     socket.on('user-joined', handleNewUserJoined);
     socket.on('incoming-call', handleIncomingCall);
     socket.on('call-accepted', handleCallAccepted);
     socket.on('ice-candidate', handleIceCandidate);
+    socket.on('user-left', handleUserLeft);
 
     return () => {
       socket.off('user-joined', handleNewUserJoined);
       socket.off('incoming-call', handleIncomingCall);
       socket.off('call-accepted', handleCallAccepted);
       socket.off('ice-candidate', handleIceCandidate);
+      socket.off('user-left', handleUserLeft);
     };
   }, [
     socket,
@@ -154,6 +170,7 @@ export const RoomPage = () => {
     handleNewUserJoined,
     handleIncomingCall,
     handleIceCandidate,
+    handleUserLeft,
   ]);
 
   useEffect(() => {
@@ -215,6 +232,8 @@ export const RoomPage = () => {
   };
 
   const handleEndCall = () => {
+    socket.emit('leave-room');
+
     if (currentUserStream) {
       const localTracks = currentUserStream.getTracks();
 
@@ -236,6 +255,20 @@ export const RoomPage = () => {
     setIsMicOn(true);
     navigate('/');
   };
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      currentUserStreamRef.current?.getTracks().forEach((track) => {
+        track.stop();
+      });
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-zinc-950 p-6 text-white">

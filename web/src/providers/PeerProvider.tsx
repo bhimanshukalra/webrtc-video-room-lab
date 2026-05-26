@@ -22,6 +22,7 @@ interface PeerContextPayload {
   addIceCandidate: (candidate: RTCIceCandidateInit) => Promise<void>;
   sendStream: (stream: MediaStream | null) => void;
   remoteUserStream: MediaStream | null;
+  clearRemoteUserStream: () => void;
   connectionState: RTCPeerConnectionState;
   iceConnectionState: RTCIceConnectionState;
 }
@@ -104,6 +105,10 @@ export const PeerProvider = ({ children }: PeerProviderProps) => {
     }
   };
 
+  const clearRemoteUserStream = () => {
+    setRemoteUserStream(null);
+  };
+
   const handleTrackEvent = useCallback((ev: RTCTrackEvent) => {
     const streams = ev.streams;
     console.log('handleTrackEvent', streams[0]);
@@ -157,6 +162,7 @@ export const PeerProvider = ({ children }: PeerProviderProps) => {
         addIceCandidate,
         sendStream,
         remoteUserStream,
+        clearRemoteUserStream,
         connectionState,
         iceConnectionState,
       }}
