@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 import { usePeer, useSocket } from '../providers';
 import { VideoPlayer } from '../components';
 
@@ -9,6 +10,10 @@ interface IncomingCallPayload {
 
 interface IceCandidatePayload {
   candidate: RTCIceCandidateInit;
+}
+
+interface RoomLocationState {
+  emailId?: string;
 }
 
 const CONTROL_BUTTON_BASE_CLASSNAME =
@@ -39,7 +44,24 @@ const getConnectionStatusClassName = (
   return 'rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-200';
 };
 
+const getSignalingStatusClassName = (
+  signalingState: 'connected' | 'disconnected' | 'reconnecting',
+) => {
+  if (signalingState === 'connected') {
+    return 'rounded-full bg-emerald-500 px-3 py-1 text-xs font-medium text-zinc-950';
+  }
+
+  if (signalingState === 'reconnecting') {
+    return 'rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-200';
+  }
+
+  return 'rounded-full bg-red-600 px-3 py-1 text-xs font-medium text-white';
+};
+
 export const RoomPage = () => {
+  const { roomId } = useParams();
+  const location = useLocation();
+  const { emailId } = (location.state ?? {}) as RoomLocationState;
   const { socket, signalingState } = useSocket();
   const {
     peer,
@@ -58,6 +80,7 @@ export const RoomPage = () => {
   const [isMicOn, setIsMicOn] = useState(true);
   const currentUserStreamRef = useRef<MediaStream | null>(null);
   const remoteEmailIdRef = useRef('');
+  const previousSignalingStateRef = useRef(signalingState);
 
   const ensureUserMediaStream = useCallback(async () => {
     if (currentUserStreamRef.current) {
@@ -156,6 +179,20 @@ export const RoomPage = () => {
     ensureUserMediaStream();
   }, [ensureUserMediaStream]);
 
+  useEffect(() => {
+    const wasReconnected =
+      previousSignalingStateRef.current !== 'connected' &&
+      signalingState === 'connected';
+
+    previousSignalingStateRef.current = signalingState;
+
+    if (!wasReconnected || !emailId || !roomId) {
+      return;
+    }
+
+    socket.emit('join-room', { emailId, roomId });
+  }, [emailId, roomId, signalingState, socket]);
+
   const toggleCamera = () => {
     const videoTrack = currentUserStream?.getVideoTracks()[0];
     if (!videoTrack) {
@@ -176,18 +213,12 @@ export const RoomPage = () => {
     setIsMicOn(audioTrack.enabled);
   };
 
-  const signalingStatusClassName = `rounded-full px-3 py-1 text-xs font-medium ${
-    signalingState === 'connected'
-      ? 'bg-emerald-500 text-zinc-950'
-      : 'bg-red-600 text-white'
-  }`;
-
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-zinc-950 p-6 text-white">
       <div className="flex flex-col items-center gap-2">
         <h1 className="text-2xl font-semibold">Room page</h1>
         <div className="flex flex-wrap justify-center gap-2">
-          <span className={signalingStatusClassName}>
+          <span className={getSignalingStatusClassName(signalingState)}>
             Signaling {signalingState}
           </span>
           <span className={getConnectionStatusClassName(connectionState)}>

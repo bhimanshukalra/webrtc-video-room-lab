@@ -14,7 +14,7 @@ interface SocketProviderProps {
 
 interface SocketContextValue {
   socket: Socket;
-  signalingState: 'connected' | 'disconnected';
+  signalingState: 'connected' | 'disconnected' | 'reconnecting';
 }
 
 const SocketContext = createContext<SocketContextValue | null>(null);
@@ -44,12 +44,24 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       setSignalingState('disconnected');
     };
 
+    const handleReconnectAttempt = () => {
+      setSignalingState('reconnecting');
+    };
+
+    const handleReconnect = () => {
+      setSignalingState('connected');
+    };
+
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
+    socket.io.on('reconnect_attempt', handleReconnectAttempt);
+    socket.io.on('reconnect', handleReconnect);
 
     return () => {
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
+      socket.io.off('reconnect_attempt', handleReconnectAttempt);
+      socket.io.off('reconnect', handleReconnect);
     };
   }, [socket]);
 

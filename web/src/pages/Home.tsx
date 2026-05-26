@@ -25,9 +25,9 @@ export const HomePage = () => {
 
   const handleRoomJoined = useCallback(
     ({ roomId }: { roomId: string }) => {
-      navigate(`/room/${roomId}`);
+      navigate(`/room/${roomId}`, { state: { emailId } });
     },
-    [navigate],
+    [emailId, navigate],
   );
 
   useEffect(() => {
