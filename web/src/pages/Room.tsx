@@ -21,12 +21,32 @@ const getControlButtonClassName = (isEnabled: boolean) =>
     isEnabled ? CONTROL_BUTTON_ON_CLASSNAME : CONTROL_BUTTON_OFF_CLASSNAME
   }`;
 
+const getConnectionStatusClassName = (
+  state: RTCPeerConnectionState | RTCIceConnectionState,
+) => {
+  const isConnected = state === 'connected' || state === 'completed';
+  const hasFailed =
+    state === 'failed' || state === 'disconnected' || state === 'closed';
+
+  if (isConnected) {
+    return 'rounded-full bg-emerald-500 px-3 py-1 text-xs font-medium text-zinc-950';
+  }
+
+  if (hasFailed) {
+    return 'rounded-full bg-red-600 px-3 py-1 text-xs font-medium text-white';
+  }
+
+  return 'rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-200';
+};
+
 export const RoomPage = () => {
   const { socket, signalingState } = useSocket();
   const {
     peer,
+    connectionState,
     createOffer,
     createAnswer,
+    iceConnectionState,
     setRemoteAnswer,
     addIceCandidate,
     sendStream,
@@ -166,9 +186,17 @@ export const RoomPage = () => {
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-zinc-950 p-6 text-white">
       <div className="flex flex-col items-center gap-2">
         <h1 className="text-2xl font-semibold">Room page</h1>
-        <span className={signalingStatusClassName}>
-          Signaling {signalingState}
-        </span>
+        <div className="flex flex-wrap justify-center gap-2">
+          <span className={signalingStatusClassName}>
+            Signaling {signalingState}
+          </span>
+          <span className={getConnectionStatusClassName(connectionState)}>
+            Peer {connectionState}
+          </span>
+          <span className={getConnectionStatusClassName(iceConnectionState)}>
+            ICE {iceConnectionState}
+          </span>
+        </div>
       </div>
       {currentUserStream && <VideoPlayer mediaStream={currentUserStream} muted />}
       {currentUserStream && (

@@ -22,6 +22,8 @@ interface PeerContextPayload {
   addIceCandidate: (candidate: RTCIceCandidateInit) => Promise<void>;
   sendStream: (stream: MediaStream | null) => void;
   remoteUserStream: MediaStream | null;
+  connectionState: RTCPeerConnectionState;
+  iceConnectionState: RTCIceConnectionState;
 }
 
 const STUN_SERVER_URLS = [
@@ -50,6 +52,10 @@ export const usePeer = () => {
 export const PeerProvider = ({ children }: PeerProviderProps) => {
   const [remoteUserStream, setRemoteUserStream] =
     useState<MediaStream | null>(null);
+  const [connectionState, setConnectionState] =
+    useState<RTCPeerConnectionState>('new');
+  const [iceConnectionState, setIceConnectionState] =
+    useState<RTCIceConnectionState>('new');
 
   const peer = useMemo(
     () =>
@@ -111,6 +117,36 @@ export const PeerProvider = ({ children }: PeerProviderProps) => {
     };
   }, [handleTrackEvent, peer]);
 
+  useEffect(() => {
+    const handleConnectionStateChange = () => {
+      setConnectionState(peer.connectionState);
+    };
+
+    const handleIceConnectionStateChange = () => {
+      setIceConnectionState(peer.iceConnectionState);
+    };
+
+    handleConnectionStateChange();
+    handleIceConnectionStateChange();
+
+    peer.addEventListener('connectionstatechange', handleConnectionStateChange);
+    peer.addEventListener(
+      'iceconnectionstatechange',
+      handleIceConnectionStateChange,
+    );
+
+    return () => {
+      peer.removeEventListener(
+        'connectionstatechange',
+        handleConnectionStateChange,
+      );
+      peer.removeEventListener(
+        'iceconnectionstatechange',
+        handleIceConnectionStateChange,
+      );
+    };
+  }, [peer]);
+
   return (
     <PeerContext.Provider
       value={{
@@ -121,6 +157,8 @@ export const PeerProvider = ({ children }: PeerProviderProps) => {
         addIceCandidate,
         sendStream,
         remoteUserStream,
+        connectionState,
+        iceConnectionState,
       }}
     >
       {children}
