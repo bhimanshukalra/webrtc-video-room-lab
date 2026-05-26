@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { usePeer, useSocket } from '../providers';
 import { VideoPlayer } from '../components';
 
@@ -61,6 +61,7 @@ const getSignalingStatusClassName = (
 export const RoomPage = () => {
   const { roomId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { emailId } = (location.state ?? {}) as RoomLocationState;
   const { socket, signalingState } = useSocket();
   const {
@@ -213,6 +214,29 @@ export const RoomPage = () => {
     setIsMicOn(audioTrack.enabled);
   };
 
+  const handleEndCall = () => {
+    if (currentUserStream) {
+      const localTracks = currentUserStream.getTracks();
+
+      for (const sender of peer.getSenders()) {
+        if (sender.track && localTracks.includes(sender.track)) {
+          peer.removeTrack(sender);
+        }
+      }
+
+      for (const track of localTracks) {
+        track.stop();
+      }
+    }
+
+    currentUserStreamRef.current = null;
+    remoteEmailIdRef.current = '';
+    setCurrentUserStream(null);
+    setIsCameraOn(true);
+    setIsMicOn(true);
+    navigate('/');
+  };
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-zinc-950 p-6 text-white">
       <div className="flex flex-col items-center gap-2">
@@ -245,6 +269,13 @@ export const RoomPage = () => {
             className={getControlButtonClassName(isMicOn)}
           >
             {isMicOn ? 'Mute mic' : 'Unmute mic'}
+          </button>
+          <button
+            type="button"
+            onClick={handleEndCall}
+            className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600"
+          >
+            End call
           </button>
         </div>
       )}
