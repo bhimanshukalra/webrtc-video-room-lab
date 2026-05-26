@@ -156,7 +156,6 @@ export const RoomPage = () => {
 
   const handleNewUserJoined = useCallback(
     async ({ emailId }: { emailId: string }) => {
-      console.log('new user joined room', emailId);
       const stream = await ensureUserMediaStream();
       sendStream(stream);
       remoteEmailIdRef.current = emailId;
@@ -169,7 +168,6 @@ export const RoomPage = () => {
 
   const handleIncomingCall = useCallback(
     async ({ fromEmail, offer }: IncomingCallPayload) => {
-      console.log('Incoming call from', fromEmail, offer);
       const stream = await ensureUserMediaStream();
       sendStream(stream);
       remoteEmailIdRef.current = fromEmail;
@@ -196,7 +194,6 @@ export const RoomPage = () => {
 
   const handleUserLeft = useCallback(
     ({ emailId }: UserLeftPayload) => {
-      console.log('user left room', emailId);
       remoteEmailIdRef.current = '';
       setToastMessage(`${getUserDisplayName(emailId)} left`);
       clearRemoteUserStream();
@@ -384,9 +381,9 @@ export const RoomPage = () => {
   }, [toastMessage]);
 
   return (
-    <div className='flex min-h-screen flex-col items-center justify-center gap-6 bg-zinc-950 p-6 text-white'>
+    <div className='relative flex min-h-screen flex-col items-center bg-zinc-950 p-6 text-white'>
       {toastMessage && (
-        <div className='fixed right-6 top-6 rounded-md bg-white px-4 py-3 text-sm font-medium text-zinc-950 shadow-lg'>
+        <div className='fixed right-6 top-6 z-20 rounded-md bg-white px-4 py-3 text-sm font-medium text-zinc-950 shadow-lg'>
           {toastMessage}
         </div>
       )}
@@ -404,14 +401,7 @@ export const RoomPage = () => {
           </span>
         </div>
       </div>
-      <div className='flex w-full max-w-5xl flex-wrap justify-center gap-4'>
-        {currentUserStream && (
-          <VideoPlayer
-            mediaStream={currentUserStream}
-            label={emailId ? `${getUserDisplayName(emailId)} (You)` : 'You'}
-            muted
-          />
-        )}
+      <div className='flex min-h-0 flex-1 w-full items-center justify-center py-6 [&>div]:max-w-5xl'>
         {remoteUserStream && (
           <VideoPlayer
             mediaStream={remoteUserStream}
@@ -420,13 +410,22 @@ export const RoomPage = () => {
           />
         )}
         {!remoteUserStream && (
-          <div className='flex aspect-video w-full max-w-md flex-1 basis-80 items-center justify-center rounded-md border border-dashed border-zinc-700 bg-zinc-900 px-6 text-center text-sm font-medium text-zinc-400'>
+          <div className='flex aspect-video w-full max-w-5xl items-center justify-center rounded-md border border-dashed border-zinc-700 bg-zinc-900 px-6 text-center text-sm font-medium text-zinc-400'>
             Waiting for someone to join
           </div>
         )}
       </div>
       {currentUserStream && (
-        <div className='flex flex-wrap justify-center gap-3'>
+        <div className='absolute bottom-6 right-6 z-10 w-48 sm:w-64 [&>div]:basis-auto [&>div]:shadow-2xl [&_div.absolute]:text-xs'>
+          <VideoPlayer
+            mediaStream={currentUserStream}
+            label={emailId ? `${getUserDisplayName(emailId)} (You)` : 'You'}
+            muted
+          />
+        </div>
+      )}
+      {currentUserStream && (
+        <div className='flex flex-wrap justify-center gap-3 pb-2'>
           <button
             type='button'
             onClick={toggleCamera}

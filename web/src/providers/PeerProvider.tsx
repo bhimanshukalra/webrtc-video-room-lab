@@ -111,7 +111,6 @@ export const PeerProvider = ({ children }: PeerProviderProps) => {
 
   const handleTrackEvent = useCallback((ev: RTCTrackEvent) => {
     const streams = ev.streams;
-    console.log('handleTrackEvent', streams[0]);
     setRemoteUserStream(streams[0]);
   }, []);
 

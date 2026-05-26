@@ -62,7 +62,6 @@ const removeUserFromRoom = (socketId: string) => {
 };
 
 socketIo.on("connection", (socket) => {
-  console.log("New connection");
   socket.on("join-room", ({ emailId, roomId }: JoinRoomPayload) => {
     emailToSocketMapping.set(emailId, socket.id);
     socketToEmailMapping.set(socket.id, emailId);
@@ -70,7 +69,6 @@ socketIo.on("connection", (socket) => {
     socket.join(roomId);
     socket.emit("joined-room", { roomId });
     socket.broadcast.to(roomId).emit("user-joined", { emailId });
-    console.log("room joined", emailId, roomId);
   });
 
   socket.on("call-user", ({ emailId, offer }: CallUserPayload) => {
