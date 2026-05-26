@@ -326,6 +326,11 @@ export const RoomPage = () => {
             label={getUserDisplayName(remoteEmailIdRef.current)}
           />
         )}
+        {!remoteUserStream && (
+          <div className='flex aspect-video w-full max-w-md flex-1 basis-80 items-center justify-center rounded-md border border-dashed border-zinc-700 bg-zinc-900 px-6 text-center text-sm font-medium text-zinc-400'>
+            Waiting for someone to join
+          </div>
+        )}
       </div>
       {currentUserStream && (
         <div className='flex gap-3'>
