@@ -62,6 +62,8 @@ const getSignalingStatusClassName = (
   return 'rounded-full bg-red-600 px-3 py-1 text-xs font-medium text-white';
 };
 
+const getUserDisplayName = (emailId: string) => emailId.split('@')[0] || emailId;
+
 export const RoomPage = () => {
   const { roomId } = useParams();
   const location = useLocation();
@@ -84,6 +86,7 @@ export const RoomPage = () => {
     useState<MediaStream | null>(null);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
+  const [toastMessage, setToastMessage] = useState('');
   const currentUserStreamRef = useRef<MediaStream | null>(null);
   const remoteEmailIdRef = useRef('');
   const previousSignalingStateRef = useRef(signalingState);
@@ -145,6 +148,7 @@ export const RoomPage = () => {
     ({ emailId }: UserLeftPayload) => {
       console.log('user left room', emailId);
       remoteEmailIdRef.current = '';
+      setToastMessage(`${getUserDisplayName(emailId)} left`);
       clearRemoteUserStream();
     },
     [clearRemoteUserStream],
@@ -270,8 +274,27 @@ export const RoomPage = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!toastMessage) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setToastMessage('');
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [toastMessage]);
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-zinc-950 p-6 text-white">
+      {toastMessage && (
+        <div className="fixed right-6 top-6 rounded-md bg-white px-4 py-3 text-sm font-medium text-zinc-950 shadow-lg">
+          {toastMessage}
+        </div>
+      )}
       <div className="flex flex-col items-center gap-2">
         <h1 className="text-2xl font-semibold">Room page</h1>
         <div className="flex flex-wrap justify-center gap-2">
